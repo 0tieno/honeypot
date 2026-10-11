@@ -1,0 +1,10 @@
+// Excludes your own test traffic. Update the IP list if your home IP changes.
+let excluded = dynamic(["105.163.156.134"]);
+let exposed = todatetime("2026-10-11T06:07:20Z"); // replaced by the real exposure time
+let ssh = CowrieLogs_CL | where TimeGenerated >= exposed and SrcIp !in (excluded) and Username !startswith "cbselftest";
+let web = CloudBaitWeb_CL | where TimeGenerated >= exposed and SrcIp !in (excluded) and UserAgent !startswith "cbselftest";
+// 05 TOP USERNAMES and PASSWORDS
+ssh | where EventId in ("cowrie.login.success","cowrie.login.failed")
+| summarize Attempts=count() by Username | top 15 by Attempts desc;
+ssh | where EventId in ("cowrie.login.success","cowrie.login.failed")
+| summarize Attempts=count() by Password | top 15 by Attempts desc
