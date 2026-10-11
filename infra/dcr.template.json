@@ -1,0 +1,71 @@
+{
+  "location": "__LOC__",
+  "kind": "Linux",
+  "tags": { "project": "cloud-bait" },
+  "properties": {
+    "dataCollectionEndpointId": "__DCE_ID__",
+    "streamDeclarations": {
+      "Custom-CowrieLogs_CL": {
+        "columns": [
+          { "name": "TimeGenerated", "type": "datetime" },
+          { "name": "RawData", "type": "string" },
+          { "name": "FilePath", "type": "string" },
+          { "name": "Computer", "type": "string" }
+        ]
+      },
+      "Custom-CloudBaitWeb_CL": {
+        "columns": [
+          { "name": "TimeGenerated", "type": "datetime" },
+          { "name": "RawData", "type": "string" },
+          { "name": "FilePath", "type": "string" },
+          { "name": "Computer", "type": "string" }
+        ]
+      }
+    },
+    "dataSources": {
+      "syslog": [
+        {
+          "name": "syslogBase",
+          "streams": [ "Microsoft-Syslog" ],
+          "facilityNames": [ "auth", "authpriv", "daemon", "syslog", "user", "kern" ],
+          "logLevels": [ "Info", "Notice", "Warning", "Error", "Critical", "Alert", "Emergency" ]
+        }
+      ],
+      "logFiles": [
+        {
+          "name": "cowrieJson",
+          "streams": [ "Custom-CowrieLogs_CL" ],
+          "filePatterns": [ "/home/cowrie/cowrie/var/log/cowrie/cowrie.json" ],
+          "format": "text"
+        },
+        {
+          "name": "cloudbaitWeb",
+          "streams": [ "Custom-CloudBaitWeb_CL" ],
+          "filePatterns": [ "/var/log/cloudbait/web.json" ],
+          "format": "text"
+        }
+      ]
+    },
+    "destinations": {
+      "logAnalytics": [ { "name": "cbLaw", "workspaceResourceId": "__LAW_ID__" } ]
+    },
+    "dataFlows": [
+      {
+        "streams": [ "Microsoft-Syslog" ],
+        "destinations": [ "cbLaw" ]
+      },
+      {
+        "streams": [ "Custom-CowrieLogs_CL" ],
+        "destinations": [ "cbLaw" ],
+        "transformKql": "source | extend d = parse_json(RawData) | extend ts = todatetime(d.timestamp) | project TimeGenerated = iif(isnull(ts), TimeGenerated, ts), RawData, Computer, FilePath, EventId = tostring(d.eventid), SrcIp = tostring(d.src_ip), SrcPort = toint(d.src_port), DstPort = toint(d.dst_port), Protocol = tostring(d.protocol), Session = tostring(d.session), Username = tostring(d.username), Password = tostring(d.password), Command = tostring(d.input), ClientVersion = tostring(d.version), Url = tostring(d.url), Sha256 = tostring(d.shasum), Duration = toreal(d.duration), Message = tostring(d.message)",
+        "outputStream": "Custom-CowrieLogs_CL"
+      },
+      {
+        "streams": [ "Custom-CloudBaitWeb_CL" ],
+        "destinations": [ "cbLaw" ],
+        "transformKql": "source | extend d = parse_json(RawData) | extend ts = todatetime(d.timestamp) | project TimeGenerated = iif(isnull(ts), TimeGenerated, ts), RawData, Computer, FilePath, SrcIp = tostring(d.src_ip), Method = tostring(d.method), Uri = tostring(d.uri), UrlPath = tostring(d.path), Query = tostring(d.query), Status = toint(d.status), ResponseBytes = toint(d.response_bytes), RequestBytes = toint(d.request_bytes), UserAgent = tostring(d.user_agent), HostHeader = tostring(d.host), Scheme = tostring(d.scheme), Referer = tostring(d.referer), Body = tostring(d.body), LoginUsername = tostring(d.login_username), LoginPassword = tostring(d.login_password)",
+        "outputStream": "Custom-CloudBaitWeb_CL"
+      }
+    ]
+  }
+}
