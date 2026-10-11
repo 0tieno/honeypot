@@ -43,6 +43,8 @@ flowchart TB
     vm -. "outbound Internet DENIED" .-x internet
 ```
 
+**New here? Start with [docs/explained-simply.md](docs/explained-simply.md)**, the whole project in plain language.
+
 More diagrams:
 
 - [docs/architecture.md](docs/architecture.md): components, network boundaries and the identity model
