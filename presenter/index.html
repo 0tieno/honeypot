@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cloud Bait Live</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    color-scheme: dark;
+    --surface: #111214;
+    --surface-2: #1a1b1e;
+    --line: #2a2b2f;
+    --text-primary: #f4f4f2;
+    --text-secondary: #b4b3ac;
+    --text-muted: #7d7c76;
+    --series-1: #3987e5; /* SSH    */
+    --series-2: #d95926; /* Telnet */
+    --series-3: #199e70; /* Web    */
+    --bar: #3987e5;
+    --live: #3fb950;
+    --offline: #d29922;
+    --mono: ui-monospace, "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace;
+    --sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--surface); color: var(--text-primary); font-family: var(--sans); overflow: hidden; }
+  .slide { position: absolute; inset: 0; padding: 6vh 7vw 9vh; display: flex; flex-direction: column; justify-content: center;
+           opacity: 0; pointer-events: none; transition: opacity .45s ease; }
+  .slide.active { opacity: 1; pointer-events: auto; }
+  .kicker { font: 600 clamp(12px, 1.3vw, 20px)/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2.2vh; }
+  h1 { font-size: clamp(32px, 5.2vw, 92px); line-height: 1.05; margin: 0 0 3vh; font-weight: 700; letter-spacing: -.02em; }
+  h2 { font-size: clamp(24px, 3.2vw, 56px); line-height: 1.1; margin: 0 0 4vh; font-weight: 650; letter-spacing: -.01em; }
+  p.lead { font-size: clamp(18px, 2.1vw, 36px); line-height: 1.45; color: var(--text-secondary); margin: 0 0 1.2vh; max-width: 60ch; }
+  p.lead b { color: var(--text-primary); font-weight: 600; }
+  .hero { font: 700 clamp(64px, 14vw, 240px)/1 var(--sans); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+  .hero small { font-size: .38em; font-weight: 600; color: var(--text-secondary); letter-spacing: 0; margin: 0 .25em 0 .08em; }
+  .sub { font-size: clamp(16px, 1.8vw, 30px); color: var(--text-secondary); margin-top: 3vh; }
+  .sub code { font-family: var(--mono); color: var(--text-primary); }
+
+  /* stat tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 1.8vw; }
+  .tile { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 3.2vh 2vw; }
+  .tile .v { font: 700 clamp(40px, 6vw, 108px)/1 var(--sans); font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+  .tile .l { margin-top: 1.4vh; font-size: clamp(14px, 1.4vw, 24px); color: var(--text-secondary); }
+
+  /* ranked bars */
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 5vw; }
+  .col h3 { font: 600 clamp(13px, 1.2vw, 20px)/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 2.4vh; }
+  .rank { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1.2vw; row-gap: .4vh; }
+  .rank .name { font: 500 clamp(15px, 1.65vw, 28px)/1.3 var(--mono); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rank .num { font: 600 clamp(15px, 1.65vw, 28px)/1.3 var(--sans); color: var(--text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+  .rank .track { grid-column: 1 / -1; height: 10px; margin-bottom: 1.5vh; }
+  .rank .fill { height: 100%; background: var(--bar); border-radius: 0 4px 4px 0; min-width: 4px; transition: width .8s ease; }
+  .rank .meta { color: var(--text-muted); font-size: .7em; margin-left: .6em; }
+  .empty { color: var(--text-muted); font-size: clamp(16px, 1.6vw, 26px); font-style: italic; }
+
+  /* terminal */
+  .term { background: #0a0a0b; border: 1px solid var(--line); border-radius: 12px; padding: 3vh 2.2vw; font: 500 clamp(14px, 1.55vw, 26px)/1.55 var(--mono); }
+  .term .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2vw; }
+  .term .cmd { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .term .cmd::before { content: "root@kd-api-prod01:~# "; color: var(--text-muted); }
+  .term .cnt { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+  /* live feed */
+  .feed { font: 500 clamp(13px, 1.35vw, 23px)/1.5 var(--mono); }
+  .feed .ev { display: grid; grid-template-columns: 7.5em 7.5em 6em minmax(0, 1fr); gap: 1.2vw; padding: .75vh 0; border-bottom: 1px solid var(--line); animation: in .5s ease; }
+  .feed .t, .feed .ip { color: var(--text-muted); }
+  .feed .kind { color: var(--text-secondary); text-transform: uppercase; font-size: .8em; letter-spacing: .1em; align-self: center; }
+  .feed .what { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @keyframes in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+  /* chart */
+  .chart-wrap { position: relative; }
+  .legend { display: flex; gap: 2.4vw; flex-wrap: wrap; margin-bottom: 2vh; font-size: clamp(14px, 1.4vw, 24px); color: var(--text-secondary); }
+  .legend span { display: inline-flex; align-items: center; gap: .5em; }
+  .legend i { width: .8em; height: .8em; border-radius: 3px; display: inline-block; }
+  .legend b { color: var(--text-primary); font-variant-numeric: tabular-nums; font-weight: 600; }
+  svg.chart { width: 100%; height: 52vh; display: block; overflow: visible; }
+  svg.chart text { fill: var(--text-muted); font: 13px var(--sans); }
+  svg.chart .grid { stroke: var(--line); stroke-width: 1; }
+  svg.chart .hit { fill: transparent; cursor: crosshair; }
+  svg.chart .col-hl { fill: #ffffff; opacity: 0; }
+  svg.chart g.col:hover .col-hl { opacity: .05; }
+  .tip { position: absolute; pointer-events: none; background: #232428; border: 1px solid #3a3b40; border-radius: 8px; padding: 10px 12px;
+         font-size: 14px; color: var(--text-primary); min-width: 170px; opacity: 0; transition: opacity .1s; box-shadow: 0 6px 24px rgba(0,0,0,.4); }
+  .tip .h { color: var(--text-secondary); margin-bottom: 6px; }
+  .tip .r { display: flex; justify-content: space-between; gap: 16px; font-variant-numeric: tabular-nums; }
+  .tip .r span { display: inline-flex; align-items: center; gap: 6px; }
+  .tip i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+  /* twist + finale */
+  .points { list-style: none; padding: 0; margin: 0; display: grid; gap: 2.6vh; }
+  .points li { font-size: clamp(18px, 2.2vw, 38px); color: var(--text-secondary); display: flex; gap: .8em; align-items: baseline; }
+  .points li b { color: var(--text-primary); font-weight: 600; }
+  .points li::before { content: "✕"; color: var(--text-muted); font-weight: 700; }
+  .slide.finale { background: #000; align-items: center; text-align: center; }
+  .finale h1 { font-size: clamp(40px, 7vw, 132px); letter-spacing: .02em; opacity: 0; transition: opacity 1.6s ease .6s; }
+  .finale.active h1 { opacity: 1; }
+
+  /* chrome */
+  .status { position: fixed; top: 2.4vh; right: 2.4vw; font: 600 13px/1 var(--mono); letter-spacing: .08em; color: var(--text-secondary);
+            display: flex; align-items: center; gap: 8px; z-index: 5; transition: opacity .4s; }
+  .status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 0 rgba(63,185,80,.6); animation: pulse 2s infinite; }
+  .status.offline .dot { background: var(--offline); animation: none; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(63,185,80,.55); } 70% { box-shadow: 0 0 0 10px rgba(63,185,80,0); } 100% { box-shadow: 0 0 0 0 rgba(63,185,80,0); } }
+  .nav { position: fixed; bottom: 2.6vh; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; z-index: 5; transition: opacity .4s; }
+  .nav button { width: 9px; height: 9px; padding: 0; border-radius: 50%; border: 0; background: #3a3b40; cursor: pointer; }
+  .nav button.on { background: var(--text-secondary); width: 26px; border-radius: 5px; }
+  .hint { position: fixed; bottom: 2.2vh; right: 2.4vw; font: 12px var(--mono); color: var(--text-muted); z-index: 5; transition: opacity .4s; }
+  body.finale-on .status, body.finale-on .nav, body.finale-on .hint, body.idle .hint { opacity: 0; }
+  body.idle { cursor: none; }
+  @media (max-width: 700px) { .feed .ev { grid-template-columns: 5.5em minmax(0, 1fr); } .feed .ip, .feed .kind { display: none; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="status" id="status" role="status"><span class="dot"></span><span id="statusText">CONNECTING…</span></div>
+
+<main id="deck">
+  <section class="slide" data-name="intro">
+    <div class="kicker">An experiment</div>
+    <h1>Operation: Cloud Bait</h1>
+    <p class="lead">On <b id="exposedAt">…</b> I put one machine on the public internet.</p>
+    <p class="lead">I made it look interesting. <b>I didn't tell anyone its address.</b></p>
+    <p class="lead">It has been online for <b id="uptime">…</b>. Let's see what happened.</p>
+  </section>
+
+  <section class="slide" data-name="first">
+    <div class="kicker">Time to first attack</div>
+    <div class="hero" id="ttfa">…</div>
+    <div class="sub" id="ttfaSub"></div>
+  </section>
+
+  <section class="slide" data-name="totals">
+    <div class="kicker">Since exposure · live</div>
+    <h2>What hit the machine</h2>
+    <div class="tiles">
+      <div class="tile"><div class="v" data-count="connections">0</div><div class="l">connection attempts</div></div>
+      <div class="tile"><div class="v" data-count="logins">0</div><div class="l">password guesses</div></div>
+      <div class="tile"><div class="v" data-count="commands">0</div><div class="l">commands typed by attackers</div></div>
+      <div class="tile"><div class="v" data-count="ips">0</div><div class="l">unique attacker IPs</div></div>
+      <div class="tile"><div class="v" data-count="countries">0</div><div class="l">countries</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-name="feed">
+    <div class="kicker">Happening right now</div>
+    <h2>The live feed</h2>
+    <div class="feed" id="feed"></div>
+  </section>
+
+  <section class="slide" data-name="hourly">
+    <div class="kicker">Connections per hour</div>
+    <h2>The internet never sleeps</h2>
+    <div class="chart-wrap" id="chartWrap">
+      <div class="legend" id="legend"></div>
+      <svg class="chart" id="chart" role="img" aria-label="Connections per hour by service"></svg>
+      <div class="tip" id="tip"></div>
+    </div>
+  </section>
+
+  <section class="slide" data-name="creds">
+    <div class="kicker">What they tried</div>
+    <h2>The most-guessed credentials</h2>
+    <div class="cols">
+      <div class="col"><h3>Usernames</h3><div class="rank" id="usernames"></div></div>
+      <div class="col"><h3>Passwords</h3><div class="rank" id="passwords"></div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-name="urls">
+    <div class="kicker">The fake website</div>
+    <h2>What the bots went looking for</h2>
+    <div class="rank" id="urls"></div>
+  </section>
+
+  <section class="slide" data-name="commands">
+    <div class="kicker">Inside the fake shell</div>
+    <h2>What they did once they "got in"</h2>
+    <div class="term" id="commands"></div>
+  </section>
+
+  <section class="slide" data-name="countries">
+    <div class="kicker">Source of traffic</div>
+    <h2 id="countriesTitle">Where it came from</h2>
+    <div class="rank" id="countries"></div>
+    <div class="sub">Location of the IP, not of the person. Most are hijacked machines and rented servers.</div>
+  </section>
+
+  <section class="slide" data-name="twist">
+    <div class="kicker">The twist</div>
+    <h1>They got in.<br>They got nothing.</h1>
+    <ul class="points">
+      <li><span><b>A fake shell</b>: every "root login" landed in a simulation.</span></li>
+      <li><span><b>Fake data</b>: no real customers, no real secrets.</span></li>
+      <li><span><b>Zero permissions</b>: the machine's cloud identity can't touch anything.</span></li>
+      <li><span><b>No way out</b>: outbound internet blocked, so it can't attack anyone else.</span></li>
+    </ul>
+  </section>
+
+  <section class="slide finale" data-name="finale">
+    <h1>WELCOME TO<br>CLOUD SECURITY</h1>
+  </section>
+</main>
+
+<nav class="nav" id="nav" aria-label="Slides"></nav>
+<div class="hint">← → navigate · F fullscreen</div>
+
+<script>
+"use strict";
+// Every attacker-controlled string goes through textContent, never innerHTML.
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const fmt = n => Number(n || 0).toLocaleString("en-US");
+const TZ = "Africa/Nairobi";
+const SERIES = [["SSH", "var(--series-1)"], ["Telnet", "var(--series-2)"], ["Web", "var(--series-3)"]];
+
+// ---------- navigation ----------
+const slides = [...document.querySelectorAll(".slide")];
+let cur = 0;
+try { cur = Math.min(slides.length - 1, Number(sessionStorage.getItem("cb-slide")) || 0); } catch {}
+if (/^#\d+$/.test(location.hash)) cur = Math.min(slides.length - 1, Number(location.hash.slice(1)) - 1);
+slides.forEach((_, i) => { const b = el("button"); b.setAttribute("aria-label", `Slide ${i + 1}`); b.onclick = () => go(i); $("nav").append(b); });
+function go(i) {
+  cur = Math.max(0, Math.min(slides.length - 1, i));
+  slides.forEach((s, j) => s.classList.toggle("active", j === cur));
+  [...$("nav").children].forEach((b, j) => b.classList.toggle("on", j === cur));
+  document.body.classList.toggle("finale-on", slides[cur].classList.contains("finale"));
+  try { sessionStorage.setItem("cb-slide", cur); } catch {}
+  if (slides[cur].dataset.name === "totals") animateCounters(true);
+}
+document.addEventListener("keydown", e => {
+  if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+  else if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+  else if (e.key === "Home") go(0);
+  else if (e.key === "End") go(slides.length - 1);
+  else if (e.key.toLowerCase() === "f") document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {});
+  else if (/^[1-9]$/.test(e.key)) go(Number(e.key) - 1);
+  else if (e.key === "0") go(9);
+});
+let idleT;
+document.addEventListener("mousemove", () => { document.body.classList.remove("idle"); clearTimeout(idleT); idleT = setTimeout(() => document.body.classList.add("idle"), 2500); });
+
+// ---------- formatting ----------
+function duration(ms, parts = 2) {
+  let s = Math.max(0, Math.floor(ms / 1000));
+  const units = [["d", 86400], ["h", 3600], ["min", 60], ["s", 1]];
+  const out = [];
+  for (const [u, n] of units) { const v = Math.floor(s / n); s -= v * n; if (v || out.length) out.push([v, u]); if (out.length === parts) break; }
+  return out.length ? out : [[0, "s"]];
+}
+const when = iso => new Date(iso).toLocaleString("en-GB", { timeZone: TZ, weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) + " EAT";
+const clock = iso => new Date(iso).toLocaleTimeString("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+// ---------- rendering ----------
+let stats = null;
+let exposed = null;
+
+function renderIntro() {
+  if (!exposed) return;
+  $("exposedAt").textContent = when(exposed);
+  $("uptime").textContent = duration(Date.now() - Date.parse(exposed), 3).map(([v, u]) => `${v} ${u}`).join(" ");
+}
+
+function renderFirst(d) {
+  const f = d.first && d.first[0];
+  const hero = $("ttfa"); hero.textContent = "";
+  if (!f) { hero.textContent = "waiting…"; return; }
+  for (const [v, u] of duration(Date.parse(f.First) - Date.parse(f.Exposed), 2)) { hero.append(String(v)); hero.append(el("small", null, u)); }
+  const sub = $("ttfaSub"); sub.textContent = "";
+  sub.append(`until the first attack: ${f.Service} from `, el("code", null, f.SrcIp), ` at ${clock(f.First)} EAT`);
+}
+
+const counterTarget = {};
+const counterShown = {};
+function renderTotals(d) {
+  const t = Object.fromEntries((d.totals || []).map(r => [r.k, r.n]));
+  Object.assign(counterTarget, {
+    connections: (t.sessions || 0) + (t.http || 0),
+    logins: t.logins || 0,
+    commands: t.commands || 0,
+    ips: t.ips || 0,
+    countries: (d.countries || []).length,
+  });
+  animateCounters(false);
+}
+let counterGen = 0;
+function animateCounters(fromZero) {
+  const gen = ++counterGen; // a newer animation cancels this one
+  document.querySelectorAll("[data-count]").forEach(node => {
+    const k = node.dataset.count, to = counterTarget[k] || 0;
+    const from = fromZero ? 0 : (counterShown[k] ?? 0);
+    const t0 = performance.now(), dur = fromZero ? 1400 : 700;
+    const step = now => {
+      if (gen !== counterGen) return;
+      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      const v = Math.round(from + (to - from) * e);
+      node.textContent = fmt(v); counterShown[k] = v;
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+function renderRank(id, rows, key, { meta } = {}) {
+  const box = $(id); box.textContent = "";
+  if (!rows || !rows.length) { box.append(el("div", "empty", "No data yet: check back later.")); return; }
+  const max = Math.max(...rows.map(r => r.n));
+  for (const r of rows) {
+    const name = el("div", "name", r[key] === "" ? "(empty)" : String(r[key]));
+    name.title = String(r[key]);
+    const num = el("div", "num", fmt(r.n));
+    if (meta) num.append(el("span", "meta", meta(r)));
+    const track = el("div", "track"), fill = el("div", "fill");
+    fill.style.width = `${(r.n / max) * 100}%`;
+    track.append(fill);
+    box.append(name, num, track);
+  }
+}
+
+function renderCommands(rows) {
+  const box = $("commands"); box.textContent = "";
+  if (!rows || !rows.length) { box.append(el("div", "empty", "No commands yet.")); return; }
+  for (const r of rows) {
+    const row = el("div", "row");
+    const c = el("div", "cmd", r.Command); c.title = r.Command;
+    row.append(c, el("div", "cnt", `×${fmt(r.n)}`));
+    box.append(row);
+  }
+}
+
+let feedKeys = new Set();
+function renderFeed(rows) {
+  const box = $("feed"); box.textContent = "";
+  if (!rows || !rows.length) { box.append(el("div", "empty", "Quiet… for now.")); return; }
+  const next = new Set();
+  for (const r of rows) {
+    const key = r.TimeGenerated + r.What;
+    next.add(key);
+    const ev = el("div", "ev");
+    if (feedKeys.size && feedKeys.has(key)) ev.style.animation = "none";
+    const kind = { cmd: "command", login: "login", web: r.Service || "web", download: "download" }[r.Kind] || r.Kind;
+    ev.append(el("span", "t", clock(r.TimeGenerated)), el("span", "ip", r.SrcIp), el("span", "kind", kind),
+              el("span", "what", r.Kind === "cmd" ? `$ ${r.What}` : r.What));
+    box.append(ev);
+  }
+  feedKeys = next;
+}
+
+// Stacked bars, one per hour since exposure. 2px surface gaps between segments, rounded top.
+function renderChart(rows) {
+  const svg = $("chart"), ns = "http://www.w3.org/2000/svg";
+  svg.textContent = "";
+  const legend = $("legend"); legend.textContent = "";
+  if (!exposed) return;
+  const H = 3600e3, start = Math.floor(Date.parse(exposed) / H) * H, end = Math.floor(Date.now() / H) * H;
+  const hours = []; for (let t = start; t <= end; t += H) hours.push(t);
+  const by = new Map(hours.map(t => [t, { SSH: 0, Telnet: 0, Web: 0 }]));
+  const totals = { SSH: 0, Telnet: 0, Web: 0 };
+  for (const r of rows || []) { const t = Date.parse(r.Hour); if (by.has(t)) { by.get(t)[r.Service] += r.n; totals[r.Service] += r.n; } }
+  for (const [name, color] of SERIES) {
+    const s = el("span"), i = el("i"); i.style.background = color;
+    s.append(i, `${name} `, el("b", null, fmt(totals[name]))); legend.append(s);
+  }
+  const W = svg.clientWidth || 1200, Ht = svg.clientHeight || 500, padL = 52, padB = 30, padT = 8;
+  svg.setAttribute("viewBox", `0 0 ${W} ${Ht}`);
+  const maxV = Math.max(1, ...hours.map(t => { const v = by.get(t); return v.SSH + v.Telnet + v.Web; }));
+  const nice = (() => { const m = Math.pow(10, Math.floor(Math.log10(maxV))); return [1, 2, 2.5, 5, 10].map(f => f * m).find(x => x * 4 >= maxV) * 4; })();
+  const y = v => Ht - padB - (v / nice) * (Ht - padB - padT);
+  const mk = (tag, attrs, text) => { const n = document.createElementNS(ns, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (text != null) n.textContent = text; return n; };
+  for (let i = 0; i <= 4; i++) {
+    const v = (nice / 4) * i;
+    svg.append(mk("line", { x1: padL, x2: W, y1: y(v), y2: y(v), class: "grid" }));
+    svg.append(mk("text", { x: padL - 10, y: y(v) + 4, "text-anchor": "end" }, fmt(v)));
+  }
+  const slot = (W - padL) / hours.length, bw = Math.max(2, Math.min(28, slot * 0.72));
+  const labelEvery = Math.ceil(hours.length / Math.max(1, Math.floor((W - padL) / 90)));
+  const tip = $("tip"), wrap = $("chartWrap");
+  hours.forEach((t, i) => {
+    const v = by.get(t), x = padL + i * slot + (slot - bw) / 2;
+    const g = mk("g", { class: "col" });
+    g.append(mk("rect", { x: padL + i * slot, y: padT, width: slot, height: Ht - padB - padT, class: "col-hl" }));
+    let base = 0;
+    const segs = SERIES.map(([n, c]) => [n, c, v[n]]).filter(s => s[2] > 0);
+    segs.forEach(([, color, n], k) => {
+      const y0 = y(base), y1 = y(base + n), top = k === segs.length - 1;
+      const h = Math.max(1, y0 - y1 - (top ? 0 : 2));
+      const r = top ? Math.min(4, bw / 2, h) : 0, yt = y0 - h;
+      const d = `M${x},${y0} V${yt + r} Q${x},${yt} ${x + r},${yt} H${x + bw - r} Q${x + bw},${yt} ${x + bw},${yt + r} V${y0} Z`;
+      g.append(mk("path", { d, fill: color }));
+      base += n;
+    });
+    g.append(mk("rect", { x: padL + i * slot, y: padT, width: slot, height: Ht - padB - padT, class: "hit" }));
+    g.addEventListener("mousemove", ev => {
+      tip.textContent = "";
+      tip.append(el("div", "h", new Date(t).toLocaleString("en-GB", { timeZone: TZ, weekday: "short", hour: "2-digit", minute: "2-digit" }) + " EAT"));
+      for (const [n, c] of SERIES) { const r = el("div", "r"), s = el("span"), i2 = el("i"); i2.style.background = c; s.append(i2, n); r.append(s, el("b", null, fmt(v[n]))); tip.append(r); }
+      const box = wrap.getBoundingClientRect();
+      let left = ev.clientX - box.left + 14; if (left + 190 > box.width) left = ev.clientX - box.left - 200;
+      tip.style.left = `${left}px`; tip.style.top = `${ev.clientY - box.top - 20}px`; tip.style.opacity = 1;
+    });
+    g.addEventListener("mouseleave", () => { tip.style.opacity = 0; });
+    svg.append(g);
+    if (i % labelEvery === 0) {
+      const d = new Date(t);
+      const lbl = d.toLocaleString("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
+      const day = d.toLocaleString("en-GB", { timeZone: TZ, weekday: "short" });
+      svg.append(mk("text", { x: padL + i * slot + slot / 2, y: Ht - 8, "text-anchor": "middle" }, i === 0 || lbl === "00:00" ? `${day} ${lbl}` : lbl));
+    }
+  });
+}
+
+function render() {
+  if (!stats) return;
+  const d = stats.data || {};
+  exposed = (d.exposed && d.exposed[0] && d.exposed[0].Exposed) || exposed;
+  renderIntro();
+  renderFirst(d);
+  renderTotals(d);
+  renderFeed(d.feed);
+  renderChart(d.hourly);
+  renderRank("usernames", d.usernames, "Username");
+  renderRank("passwords", d.passwords, "Password");
+  renderRank("urls", d.urls, "UrlPath", { meta: r => `${fmt(r.ips)} IP${r.ips === 1 ? "" : "s"}` });
+  renderCommands(d.commands);
+  renderRank("countries", (d.countries || []).slice(0, 8), "Country", { meta: r => `${fmt(r.ips)} IP${r.ips === 1 ? "" : "s"}` });
+  $("countriesTitle").textContent = (d.countries || []).length ? `Attacks from ${(d.countries || []).length} countries` : "Where it came from";
+}
+
+function renderStatus() {
+  const s = $("status"), t = $("statusText");
+  if (!stats || !stats.updatedAt) { s.classList.add("offline"); t.textContent = "WAITING FOR DATA"; return; }
+  const age = Math.round((Date.now() - Date.parse(stats.updatedAt)) / 1000);
+  s.classList.toggle("offline", !stats.live || age > 120);
+  t.textContent = stats.live && age <= 120 ? `LIVE · UPDATED ${age}s AGO` : `OFFLINE · DATA AS OF ${clock(stats.updatedAt)} EAT`;
+}
+
+async function poll() {
+  try {
+    const r = await fetch("/api/stats", { cache: "no-store" });
+    if (r.ok) { stats = await r.json(); render(); }
+  } catch { if (stats) stats.live = false; }
+  renderStatus();
+}
+go(cur);
+poll();
+setInterval(poll, 10_000);
+setInterval(() => { renderIntro(); renderStatus(); }, 1000);
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => stats && renderChart(stats.data.hourly), 150); });
+</script>
+</body>
+</html>

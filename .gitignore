@@ -2,3 +2,4 @@ keys/
 infra/.dcr.rendered.json
 infra/.workbook.rendered.json
 vm/cloudbait_web.py
+presenter/.snapshot.json

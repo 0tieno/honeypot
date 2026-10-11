@@ -85,6 +85,7 @@ infra/table-*.json       custom table schemas
 infra/kql.sh             run KQL from the terminal
 queries/*.kql            dashboard panels 01–11
 tests/selftest.sh        end-to-end test (services + ingestion)
+presenter/               live slide deck (server.js + index.html), local only
 keys/                    admin SSH key (keep private, do not commit)
 ```
 
@@ -99,6 +100,29 @@ ssh -p 22022 -i keys/cloudbait_ed25519 -o UserKnownHostsFile=keys/known_hosts cl
 ```
 
 If your home IP changes, update `Allow-Admin-SSH` in the NSG and the `excluded` list in `queries/*.kql`.
+
+## Presenter (live slides)
+
+```bash
+node presenter/server.js        # or double-click presenter/start.cmd
+# open http://localhost:4000, press F for fullscreen, use ← → or a clicker
+```
+
+Eleven slides pull live numbers from `cb-law` every 30 seconds: intro, time to first attack, counters, live feed, hourly chart, credentials, URLs, commands, countries, "the twist" and the finale.
+
+- **Local only.** The server binds `127.0.0.1`, so nobody else on the venue network can open it.
+- **Read-only token.** It reuses your `az login`, but requests a token for the Log Analytics query API only. No secrets are stored.
+- **Offline-safe.** Each refresh saves `presenter/.snapshot.json`. If Wi-Fi drops, the slides keep the last numbers and the pill shows `OFFLINE · DATA AS OF …`.
+- **Privacy.** Attacker IPs are masked (`77.91.x.x`), and all attacker text is rendered as plain text, never as HTML.
+- Jump to a slide with keys `1`–`9` or with `http://localhost:4000/#5`.
+
+```mermaid
+flowchart LR
+    browser["Browser · fullscreen<br/>localhost:4000"] -- "/api/stats every 10s" --> server["presenter/server.js<br/>127.0.0.1 only"]
+    server -- "az account get-access-token<br/>--resource api.loganalytics.io" --> az["Your az login"]
+    server -- "10 KQL queries every 30s<br/>read-only" --> law[("cb-law")]
+    server -- "save each good refresh" --> snap[(".snapshot.json<br/>offline fallback")]
+```
 
 ## Network rules
 
