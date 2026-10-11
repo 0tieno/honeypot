@@ -1,0 +1,543 @@
+<title>Operation Cloud Bait</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: a single 68ch reading column with wide breakouts for diagrams, tables and code; honey-amber accent for the honeypot theme. */
+  :root {
+    --bg: #f6f7f8;
+    --surface: #ffffff;
+    --fg: #16191d;
+    --fg-2: #4a5059;
+    --fg-3: #737a85;
+    --rule: #dde1e6;
+    --code-bg: #eef0f3;
+    --accent: #8a5a0c;       /* honey, text-safe on light */
+    --accent-soft: #f4e3c1;
+    --mark: #b7791f;
+    --measure: 680px;
+    --font-display: "Archivo", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Literata", Georgia, "Times New Roman", serif;
+    --font-mono: "JetBrains Mono", ui-monospace, Consolas, Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1215; --surface: #161a1f; --fg: #e7e9ec; --fg-2: #b3b9c2; --fg-3: #858c96;
+      --rule: #2a3038; --code-bg: #1b2026; --accent: #f0b44c; --accent-soft: #3a2c12; --mark: #f0b44c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1215; --surface: #161a1f; --fg: #e7e9ec; --fg-2: #b3b9c2; --fg-3: #858c96;
+    --rule: #2a3038; --code-bg: #1b2026; --accent: #f0b44c; --accent-soft: #3a2c12; --mark: #f0b44c;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--fg); font: 400 18px/1.7 var(--font-body); padding-inline: 20px; padding-block: 0 96px; }
+  .col { max-width: var(--measure); margin-inline: auto; }
+  .wide { max-width: 1040px; margin-inline: auto; }
+  article > * { max-width: var(--measure); margin-inline: auto; }
+  article > .wide { max-width: 1040px; }
+
+  header.masthead { max-width: 1040px; margin: 0 auto; padding-block: 64px 40px; border-bottom: 1px solid var(--rule); }
+  .eyebrow { font: 600 13px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  h1 { font: 800 clamp(40px, 7vw, 84px)/1.0 var(--font-display); letter-spacing: -.03em; margin: 18px 0 20px; text-wrap: balance; }
+  .dek { font-size: clamp(19px, 2.2vw, 23px); color: var(--fg-2); max-width: 60ch; margin: 0; text-wrap: pretty; }
+  .meta { margin-top: 24px; font: 400 14px/1.5 var(--font-mono); color: var(--fg-3); display: flex; gap: 8px 24px; flex-wrap: wrap; }
+
+  .stats { max-width: 1040px; margin: 40px auto 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  .stat { background: var(--surface); padding: 20px 20px 18px; min-width: 0; }
+  .stat b { display: block; font: 700 clamp(28px, 3.6vw, 40px)/1 var(--font-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .stat span { display: block; margin-top: 8px; font-size: 14px; line-height: 1.35; color: var(--fg-2); }
+  .stat.hero { background: var(--accent-soft); }
+  .stats-note { max-width: 1040px; margin: 0 auto 8px; font: 400 13px/1.5 var(--font-mono); color: var(--fg-3); }
+
+  nav.toc { max-width: var(--measure); margin: 48px auto 0; padding: 20px 24px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+  nav.toc h2 { margin: 0 0 10px; font: 600 13px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--fg-3); }
+  nav.toc ol { margin: 0; padding-left: 1.4em; columns: 2 260px; column-gap: 32px; font-size: 16px; }
+  nav.toc li { break-inside: avoid; margin: 2px 0; }
+
+  h2 { font: 700 clamp(26px, 3.4vw, 34px)/1.15 var(--font-display); letter-spacing: -.015em; margin: 72px auto 16px; text-wrap: balance; }
+  h2 .n { color: var(--accent); font-weight: 800; margin-right: .35em; font-variant-numeric: tabular-nums; }
+  h3 { font: 700 21px/1.3 var(--font-display); margin: 40px auto 8px; text-wrap: balance; }
+  p, li { text-wrap: pretty; }
+  p { margin-block: 0 1.05em; }
+  ul, ol { padding-left: 1.3em; }
+  li { margin: .35em 0; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+  strong { font-weight: 600; }
+  code { font: 400 .84em/1.4 var(--font-mono); background: var(--code-bg); padding: .12em .36em; border-radius: 4px; overflow-wrap: anywhere; }
+  pre { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px; overflow-x: auto; font: 400 14px/1.6 var(--font-mono); margin: 0 auto 1.4em; }
+  pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+  .file { display: block; font: 600 12px/1 var(--font-mono); letter-spacing: .06em; color: var(--fg-3); margin: 22px auto 8px; }
+  .c { color: var(--fg-3); }
+
+  blockquote { margin: 28px auto; padding: 4px 0 4px 22px; border-left: 3px solid var(--mark); font-size: 21px; line-height: 1.5; color: var(--fg); font-style: italic; }
+  .callout { border: 1px solid var(--rule); background: var(--surface); border-radius: 10px; padding: 18px 22px; margin: 24px auto; }
+  .callout .eyebrow { display: block; margin-bottom: 8px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .tbl { overflow-x: auto; margin: 8px auto 24px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 15.5px; line-height: 1.45; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font: 600 12.5px/1.3 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--fg-3); background: var(--code-bg); }
+  tr:last-child td { border-bottom: 0; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 14px; }
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .pair > * { min-width: 0; }
+
+  figure { margin: 28px auto 32px; }
+  figure .frame { border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); padding: 20px; overflow-x: auto; }
+  figcaption { font-size: 15px; color: var(--fg-3); margin-top: 10px; line-height: 1.5; }
+  pre.mermaid { background: none; border: 0; padding: 0; margin: 0; text-align: center; font-family: var(--font-body); }
+
+  .lessons { list-style: none; padding: 0; counter-reset: l; }
+  .lessons li { counter-increment: l; padding: 14px 0 14px 52px; position: relative; border-top: 1px solid var(--rule); margin: 0; }
+  .lessons li::before { content: counter(l, decimal-leading-zero); position: absolute; left: 0; top: 14px; font: 700 18px/1.5 var(--font-display); color: var(--accent); }
+  .lessons li:last-child { border-bottom: 1px solid var(--rule); }
+
+  footer.end { max-width: var(--measure); margin: 80px auto 0; padding-top: 24px; border-top: 1px solid var(--rule); font-size: 15px; color: var(--fg-3); }
+
+  @media (max-width: 560px) {
+    body { font-size: 17px; padding-inline: 16px; }
+    pre { font-size: 12.5px; padding: 14px; }
+    .lessons li { padding-left: 40px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<header class="masthead">
+  <div class="eyebrow">Operation: Cloud Bait · Azure honeypot field notes</div>
+  <h1>Four minutes and forty&#8209;eight seconds</h1>
+  <p class="dek">I built a deliberately tempting, deliberately harmless server in Azure, told nobody its address, and wired every keystroke into Log Analytics. This is how it was built, what broke along the way, and what the internet did to it.</p>
+  <div class="meta"><span>11 October 2026</span><span>Azure · Cowrie · Azure Monitor Agent · KQL</span><span>~25 min read</span></div>
+</header>
+
+<section class="stats" aria-label="Headline numbers">
+  <div class="stat hero"><b>4m 48s</b><span>from exposure to first attack</span></div>
+  <div class="stat"><b>579</b><span>SSH and Telnet sessions</span></div>
+  <div class="stat"><b>563</b><span>password guesses</span></div>
+  <div class="stat"><b>774</b><span>commands typed into a fake shell</span></div>
+  <div class="stat"><b>23</b><span>source IPs</span></div>
+  <div class="stat"><b>13</b><span>countries</span></div>
+</section>
+<p class="stats-note">First 71 minutes after exposure (06:07–07:18 UTC). The experiment keeps running until 15 October.</p>
+
+<nav class="toc" aria-label="Contents">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#why">Why build a honeypot</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#isolation">Isolation and the network</a></li>
+    <li><a href="#ssh">Getting the real SSH out of the way</a></li>
+    <li><a href="#cowrie">Cowrie: the fake shell</a></li>
+    <li><a href="#web">The fake web application</a></li>
+    <li><a href="#telemetry">Telemetry: AMA, DCR and custom tables</a></li>
+    <li><a href="#identity">The identity paradox</a></li>
+    <li><a href="#testing">Testing before exposure</a></li>
+    <li><a href="#results">What the internet did</a></li>
+    <li><a href="#viz">Dashboards and a live slide deck</a></li>
+    <li><a href="#gotchas">Gotchas</a></li>
+    <li><a href="#lessons">Security lessons</a></li>
+    <li><a href="#cleanup">Cost and cleanup</a></li>
+  </ol>
+</nav>
+
+<article>
+
+<h2 id="why"><span class="n">01</span>Why build a honeypot</h2>
+<p>I'm opening an introduction-to-cloud-security session, and I wanted to start with evidence instead of slides. The hypothesis was simple:</p>
+<blockquote>Internet-facing cloud workloads receive automated reconnaissance and authentication attempts shortly after exposure, whether or not anyone knows they exist.</blockquote>
+<p>A honeypot tests that directly. You run something that <em>looks</em> worth attacking, make sure it can't actually be harmed or abused, and record everything. The one principle that shaped every decision below:</p>
+<div class="callout"><span class="eyebrow">Design principle</span><p><strong>The VM is disposable. The telemetry is the asset.</strong> Logs leave the machine within about a minute of being written. If the box is compromised, wiped or deleted, the evidence is already somewhere else.</p></div>
+<p>The second principle followed from the first: <strong>monitoring is verified before anything is exposed</strong>. A honeypot that starts logging an hour late has already lost its most interesting number, the time to first contact.</p>
+
+<h2 id="architecture"><span class="n">02</span>Architecture</h2>
+<p>One small Ubuntu VM in its own resource group, fronted by a network security group. Two deception services run on it: Cowrie for SSH and Telnet, and a fake corporate web portal. The Azure Monitor Agent ships their logs through a data collection rule into a Log Analytics workspace, where KQL turns them into a workbook and a live slide deck.</p>
+<figure class="wide">
+  <div class="frame">
+<pre class="mermaid">
+flowchart TB
+    internet(["Internet&lt;br/&gt;scanners, bots, brute-forcers"])
+    admin(["Admin&lt;br/&gt;single IP"])
+    subgraph rg["cloud-bait-rg"]
+        nsg{{"cb-nsg&lt;br/&gt;in: 22, 23, 80, 443 from Internet&lt;br/&gt;in: 22022 from admin IP&lt;br/&gt;out: Azure Monitor only"}}
+        subgraph vm["cb-vm-01 · Ubuntu 24.04"]
+            ipt["iptables&lt;br/&gt;22 → 2222 · 23 → 2223"]
+            cowrie["Cowrie&lt;br/&gt;fake SSH/Telnet"]
+            nginx["nginx&lt;br/&gt;80 / 443"]
+            app["fake portal&lt;br/&gt;Python stdlib"]
+            sshd["real sshd :22022"]
+            ama["Azure Monitor Agent&lt;br/&gt;identity with 0 roles"]
+        end
+        dcr["DCE + DCR&lt;br/&gt;parse JSON → columns"]
+        law[("Log Analytics&lt;br/&gt;CowrieLogs_CL · CloudBaitWeb_CL&lt;br/&gt;Syslog · Heartbeat")]
+        wb["Workbook + live slides"]
+    end
+    internet --> nsg
+    admin --> nsg
+    nsg -- "22 / 23" --> ipt --> cowrie --> ama
+    nsg -- "80 / 443" --> nginx --> app --> ama
+    nsg -- "22022" --> sshd
+    ama --> dcr --> law --> wb
+    vm -. "outbound Internet denied" .-x internet
+</pre>
+  </div>
+  <figcaption>Everything lives in one resource group, so a single <code>az group delete</code> removes the whole experiment.</figcaption>
+</figure>
+<div class="tbl wide"><table>
+  <thead><tr><th>Component</th><th>Choice</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Compute</td><td>Ubuntu 24.04, Standard_B2als_v2, South Africa North</td><td>Small and cheap. It's bait, not a workload.</td></tr>
+    <tr><td>SSH/Telnet deception</td><td>Cowrie (medium interaction)</td><td>Accepts logins into an emulated shell and logs every event as JSON</td></tr>
+    <tr><td>Web deception</td><td>nginx → standard-library Python app</td><td>Full control of the bait content; no third-party code to exploit</td></tr>
+    <tr><td>Telemetry</td><td>Azure Monitor Agent + DCE + DCR</td><td>Microsoft's current agent; DCR transforms parse the JSON at ingestion</td></tr>
+    <tr><td>Analysis</td><td>Log Analytics + KQL, Azure Workbook</td><td>Queryable evidence, with built-in IP geolocation</td></tr>
+    <tr><td>Infrastructure as code</td><td>Bash + <code>az</code> CLI in phases</td><td>Each phase can be verified before the next one runs</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="isolation"><span class="n">03</span>Isolation and the network</h2>
+<p>The subscription also hosts unrelated production resource groups, so isolation was the first job, not an afterthought. Everything sits in <code>cloud-bait-rg</code>, tagged <code>delete-after=2026-10-16</code>, inside its own VNet (<code>10.50.0.0/16</code>) with <strong>no peering, no VPN gateway and no private endpoints</strong>. There's no network path from the honeypot to anything else I own.</p>
+<p>The NSG is the whole perimeter. Inbound rules allow only the services under observation. Outbound gets more attention, because a compromised honeypot that can reach the internet becomes part of someone else's botnet.</p>
+<div class="tbl wide"><table>
+  <thead><tr><th>Rule</th><th>Priority</th><th>Direction</th><th>Ports</th><th>Source → Destination</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td><code>Allow-Admin-SSH</code></td><td class="num">100</td><td>In</td><td>22022</td><td>admin IP → *</td><td>Allow</td></tr>
+    <tr><td><code>Honeypot-Ingress</code></td><td class="num">200</td><td>In</td><td>22, 23, 80, 443</td><td>Internet → * <span class="c">(admin IP only until go-live)</span></td><td>Allow</td></tr>
+    <tr><td><code>Allow-AzureMonitor-Out</code></td><td class="num">100</td><td>Out</td><td>*</td><td>VirtualNetwork → <code>AzureMonitor</code></td><td>Allow</td></tr>
+    <tr><td><code>Allow-AzureRM-Out</code></td><td class="num">110</td><td>Out</td><td>443</td><td>VirtualNetwork → <code>AzureResourceManager</code></td><td>Allow</td></tr>
+    <tr><td><code>Allow-Entra-Out</code></td><td class="num">120</td><td>Out</td><td>443</td><td>VirtualNetwork → <code>AzureActiveDirectory</code></td><td>Allow</td></tr>
+    <tr><td><code>Deny-Internet-Out</code></td><td class="num">4000</td><td>Out</td><td>*</td><td>* → Internet</td><td>Deny</td></tr>
+  </tbody>
+</table></div>
+<p>Service tags keep the monitoring path open while everything else is denied. From the VM, <code>curl https://example.com</code> times out, while heartbeats and logs keep flowing. Two side effects are worth knowing:</p>
+<ul>
+  <li><strong>Cowrie can't fetch payloads.</strong> Its emulated <code>wget</code> and <code>curl</code> make real requests from the VM, so blocking egress blocks them too. You still capture the command and the URL, just not the binary. For a short public demo, I chose safety over a malware collection.</li>
+  <li><strong>DNS still resolves.</strong> Azure's platform resolver at <code>168.63.129.16</code> isn't filtered by NSGs. That leaves a theoretical DNS exfiltration channel, which is acceptable on a box holding nothing worth exfiltrating.</li>
+</ul>
+<p>The inbound honeypot rule starts locked to my own IP. Opening it to <code>Internet</code> is a separate, deliberate step that also records the timestamp:</p>
+<span class="file">infra/deploy.sh: expose</span>
+<pre><code>az network nsg rule update -g "$RG" --nsg-name "$NSG" -n Honeypot-Ingress \
+    --source-address-prefixes Internet -o none
+T=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+echo "EXPOSED at $T" | tee -a "$ROOT/EXPOSURE_TIME.txt"
+<span class="c"># stamp the exposure time into every dashboard query, then redeploy the workbook</span>
+set +f; sed -i "s/^let exposed = todatetime(\"[^\"]*\")/let exposed = todatetime(\"$T\")/" "$ROOT"/queries/*.kql
+"$0" dashboard</code></pre>
+
+<h2 id="ssh"><span class="n">04</span>Getting the real SSH out of the way</h2>
+<p>The internet expects SSH on port 22, so Cowrie needs port 22, and the real <code>sshd</code> has to move. You never want internet traffic reaching the real daemon on a honeypot.</p>
+<p>On Ubuntu 24.04 this has a trap. SSH is <strong>socket-activated</strong>: systemd's <code>ssh.socket</code> owns the listening port, so editing <code>Port</code> in <code>sshd_config</code> does nothing on its own. You have to override the socket unit:</p>
+<span class="file">vm/setup.sh</span>
+<pre><code>mkdir -p /etc/systemd/system/ssh.socket.d
+cat &gt; /etc/systemd/system/ssh.socket.d/override.conf &lt;&lt;EOF
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:22022
+ListenStream=[::]:22022
+EOF
+cat &gt; /etc/ssh/sshd_config.d/10-cloudbait.conf &lt;&lt;EOF
+Port 22022
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+EOF
+systemctl daemon-reload
+systemctl restart ssh.socket</code></pre>
+<p>The empty <code>ListenStream=</code> clears the default before adding the new one. The NSG rule for 22022 existed before this ran, so there was no window in which I could lock myself out. The admin key is a dedicated ed25519 key generated for this project alone. Only its public half is on the VM.</p>
+
+<h2 id="cowrie"><span class="n">05</span>Cowrie: the fake shell</h2>
+<p><a href="https://github.com/cowrie/cowrie">Cowrie</a> is a medium-interaction SSH and Telnet honeypot. It accepts logins, presents an emulated filesystem and shell, and logs connections, credentials, commands and download attempts as structured JSON. It runs as an unprivileged <code>cowrie</code> user, so it can't bind ports below 1024. iptables redirects the public ports to its listeners instead:</p>
+<pre><code>iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222
+iptables -t nat -A PREROUTING -p tcp --dport 23 -j REDIRECT --to-port 2223
+netfilter-persistent save</code></pre>
+<p>The systemd unit adds <code>NoNewPrivileges</code>, <code>ProtectSystem=strict</code> and a single writable path for its <code>var/</code> directory. The persona matters more than you'd expect, and my first draft got it wrong. Cowrie's default filesystem and banner say <em>Debian</em>, and I'd set an <em>Ubuntu</em> kernel string. Any script that runs <code>uname -a</code> and <code>cat /etc/issue</code> would see the mismatch, so the final config is consistently Debian 11:</p>
+<span class="file">vm/cowrie.cfg</span>
+<pre><code>[honeypot]
+hostname = kd-api-prod01
+
+[shell]
+kernel_version = 5.10.0-28-amd64
+kernel_build_string = #1 SMP Debian 5.10.209-2 (2024-01-31)
+
+[ssh]
+listen_endpoints = tcp:2222:interface=0.0.0.0
+version = SSH-2.0-OpenSSH_8.4p1 Debian-5+deb11u3
+
+[telnet]
+enabled = true
+listen_endpoints = tcp:2223:interface=0.0.0.0</code></pre>
+<p>That turned out to be relevant: within the first hour, a bot ran a script built specifically to tell real shells from emulated ones. More on that in <a href="#results">the results</a>.</p>
+
+<h2 id="web"><span class="n">06</span>The fake web application</h2>
+<p>The web bait is a portal for <strong>Kipeo Digital Services</strong>, a fictional East African payments company. I deliberately didn't use any real brand. It's about 250 lines of Python using only the standard library (<code>http.server</code>), behind nginx, which terminates TLS with a self-signed certificate. Scanners don't care about the certificate warning, and there's no dependency tree to patch or exploit.</p>
+<div class="pair wide">
+  <div class="tbl"><table>
+    <thead><tr><th>Route</th><th>What the bot sees</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code></td><td>Homepage with a "cloud environment" table: api-prod, postgres-prod, customer-storage, backup-prod</td></tr>
+      <tr><td><code>/login</code>, <code>/admin</code>, <code>/wp-login.php</code>, <code>/phpmyadmin</code></td><td>Login form. Every POST returns 401, and the attempted credentials are logged.</td></tr>
+      <tr><td><code>/api/v1/{users,customers,transactions}</code></td><td>JSON like <code>{"environment":"production","records":12482}</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Bait file</th><th>Contents</th></tr></thead>
+    <tbody>
+      <tr><td><code>/.env</code></td><td><code>APP_ENV=demo</code>, <code>DATABASE_HOST=database.internal</code>. No secrets of any kind.</td></tr>
+      <tr><td><code>/backup/</code> listing</td><td><code>backup_2026.sql</code>, <code>customer_export.csv</code>…, containing three placeholder IDs</td></tr>
+      <tr><td><code>/robots.txt</code></td><td><code>Disallow: /admin</code>, <code>/backup</code>, <code>/config</code>: a map of exactly what scanners want</td></tr>
+    </tbody>
+  </table></div>
+</div>
+<p>Every request becomes one JSON line, including the forwarded client IP, the user agent, a truncated body and any submitted credentials. The response headers lie a little (<code>X-Powered-By: PHP/7.4.3</code>) to make the target look softer.</p>
+<span class="file">app/cloudbait_web.py: one log record</span>
+<pre><code>{"timestamp": "2026-10-11T05:47:48.877Z", "src_ip": "…", "method": "POST",
+ "uri": "/login", "status": 401, "user_agent": "…", "scheme": "http",
+ "body": "username=…&amp;password=…", "login_username": "…", "login_password": "…"}</code></pre>
+<p>One rule I held to: <strong>a honeypot shouldn't be "fully vulnerable".</strong> No ancient OpenSSH, no exploitable PHP, no real credentials. Automated traffic produces reconnaissance, brute force and exploit probing without any of those, and the deception layer captures behaviour without handing anyone a real server.</p>
+
+<h2 id="telemetry"><span class="n">07</span>Telemetry: AMA, DCR and custom tables</h2>
+<p>This is where the original plan would have failed quietly. It assumed a Syslog data source would capture the attacks. It wouldn't have: Cowrie writes <code>var/log/cowrie/cowrie.json</code> and the web app writes <code>/var/log/cloudbait/web.json</code>, and neither goes anywhere near syslog. A Syslog-only DCR shows heartbeats and system noise, and none of the attack data.</p>
+<p>The working pipeline uses a <strong>custom text-log data source</strong> for each file. The DCR treats each line as <code>RawData</code>, and a <strong>transformKql</strong> parses it into typed columns at ingestion time:</p>
+<figure class="wide">
+  <div class="frame">
+<pre class="mermaid">
+flowchart LR
+    line["cowrie.json line"] --> fb["fluent-bit tail&lt;br/&gt;RawData = line"]
+    fb --> dce["Data collection&lt;br/&gt;endpoint"]
+    dce --> tx["transformKql&lt;br/&gt;parse_json → columns"]
+    tx --> tbl[("CowrieLogs_CL")]
+    tbl --> q["KQL panels"]
+</pre>
+  </div>
+  <figcaption>The web log takes the same path into <code>CloudBaitWeb_CL</code>. Syslog and Heartbeat go to their built-in tables.</figcaption>
+</figure>
+<span class="file">infra/dcr.template.json: Cowrie data flow</span>
+<pre><code>{
+  "streams": [ "Custom-CowrieLogs_CL" ],
+  "destinations": [ "cbLaw" ],
+  "transformKql": "source
+    | extend d = parse_json(RawData)
+    | extend ts = todatetime(d.timestamp)
+    | project TimeGenerated = iif(isnull(ts), TimeGenerated, ts),
+              RawData, Computer, FilePath,
+              EventId = tostring(d.eventid), SrcIp = tostring(d.src_ip),
+              DstPort = toint(d.dst_port), Session = tostring(d.session),
+              Username = tostring(d.username), Password = tostring(d.password),
+              Command = tostring(d.input), ClientVersion = tostring(d.version),
+              Url = tostring(d.url), Sha256 = tostring(d.shasum)",
+  "outputStream": "Custom-CowrieLogs_CL"
+}</code></pre>
+<p>Using the event's own timestamp as <code>TimeGenerated</code> means the charts show when the attack happened, not when the agent shipped it. The custom tables have to exist before the DCR can target them. I created them with <code>az rest</code> against the workspace tables API, declaring <code>TimeGenerated</code>, <code>RawData</code>, <code>Computer</code>, <code>FilePath</code> and every parsed column.</p>
+<h3>Three things the agent taught me</h3>
+<ul>
+  <li><strong>The first config fetch can be a 404.</strong> I installed the agent extension, then created the DCR association. The agent's first check-in came seconds before the association existed (<code>Mcs indicated that VM is not associated with the DCR, statuscode: 404</code>). It retries within minutes, but it looks alarming in the log.</li>
+  <li><strong>File tailing uses a multiline parser.</strong> The generated fluent-bit config attaches a multiline parser that starts a new record on lines beginning with an ISO-8601 timestamp. JSON lines start with <code>{</code>, so I expected every record to merge into one. In practice, lines that don't match the start state pass through one per line, which I confirmed by checking <code>strlen(RawData)</code> per row. Verify this rather than assume it.</li>
+  <li><strong>Two processes, two users.</strong> <code>mdsd</code> runs as <code>syslog</code>, while fluent-bit, which tails the files, runs as root. I added <code>syslog</code> to the <code>cowrie</code> group anyway, so the agent can read the logs whichever process does the reading.</li>
+</ul>
+
+<h2 id="identity"><span class="n">08</span>The identity paradox</h2>
+<p>The plan said: <em>don't give the honeypot a managed identity.</em> The Azure Monitor Agent says otherwise. It authenticates to the ingestion endpoint with one, and associating a DCR through the portal quietly enables a system-assigned identity on the VM.</p>
+<p>The fix is to separate <em>having an identity</em> from <em>having permissions</em>. The VM has an identity so the agent can sign its uploads. It has <strong>zero role assignments at any scope</strong>, which I checked with <code>az role assignment list --assignee &lt;principalId&gt; --all</code>.</p>
+<figure class="wide">
+  <div class="frame">
+<pre class="mermaid">
+flowchart LR
+    a(["Attacker with root"]) --> imds["IMDS&lt;br/&gt;169.254.169.254"]
+    imds --> tok["Managed identity token"]
+    tok --> arm["Azure Resource Manager"]
+    arm --> no["403 on every call&lt;br/&gt;0 role assignments"]
+</pre>
+  </div>
+  <figcaption>Least privilege in its purest form: the workload needs no Azure permissions, so it has none.</figcaption>
+</figure>
+<p>What remains possible for an attacker with root on the VM: sending junk into this workspace (data poisoning, plus some ingestion cost, which a daily cap would bound) and the DNS path described above. Neither touches the rest of the subscription.</p>
+
+<h2 id="testing"><span class="n">09</span>Testing before exposure</h2>
+<p>Exposure is a one-way door for the "time to first attack" metric, so everything was tested end to end while the NSG still admitted only my IP. <code>tests/selftest.sh</code> generates traffic tagged with a unique ID and then polls Log Analytics until that exact traffic shows up:</p>
+<pre><code>== Honeypot &lt;ip&gt;, tag cbselftest-1791698472
+-- Web (HTTP/HTTPS)
+  PASS  GET  http  / (200)
+  PASS  GET  http  /.env (200)
+  PASS  GET  https /admin (200)
+  PASS  GET  http  /api/v1/customers (200)
+  PASS  GET  http  /backup/backup_2026.sql (200)
+  PASS  POST http  /login (401)
+  PASS  .env has no secret-looking values
+-- SSH honeypot (port 22 -&gt; Cowrie)
+  PASS  Cowrie accepted login and ran fake shell
+  PASS  fake uname persona
+-- Telnet honeypot (port 23 -&gt; Cowrie)
+  PASS  port 23 accepts connections
+-- Real admin sshd is NOT on 22
+  PASS  port 22 is Cowrie, not the real host
+-- Log Analytics ingestion (polls up to 15 min)
+  PASS  Heartbeat in last 10m (10)
+  PASS  Syslog in last 30m (912)
+  PASS  web requests in CloudBaitWeb_CL (7)
+  PASS  SSH login + command in CowrieLogs_CL (2)
+== 15 passed, 0 failed</code></pre>
+<p>The scripted SSH login uses <code>SSH_ASKPASS</code> with <code>SSH_ASKPASS_REQUIRE=force</code> to feed a password non-interactively, with no <code>sshpass</code> needed. The order mattered: test, apply the egress deny, <strong>test again</strong>, and only then expose. The second run caught nothing wrong with egress, but it did catch a bug in the test. It expected seven tagged web requests when only six carried the tag, so it waited fifteen minutes for data that had arrived in one.</p>
+
+<h2 id="results"><span class="n">10</span>What the internet did</h2>
+<p>The NSG opened at <strong>06:07:20 UTC</strong>. The first connection, an SSH session, arrived at <strong>06:12:08 UTC</strong>. Nobody had been given the address. A scanner simply found it.</p>
+<blockquote>Four minutes and forty-eight seconds. That's how long a new cloud workload stays unnoticed.</blockquote>
+<p>Everything below covers the first 71 minutes.</p>
+
+<h3>The noise floor is dominated by a few machines</h3>
+<p>One IP geolocated to Bulgaria accounted for 501 of 579 sessions, cycling through one password guess and one <code>uname</code> every five seconds. "Thousands of attacks" usually means a handful of tireless bots plus a long tail. Being attacked is not evidence of being <em>targeted</em>; this is internet background radiation.</p>
+
+<div class="pair wide">
+  <div class="tbl"><table>
+    <thead><tr><th>Username</th><th style="text-align:right">Tries</th></tr></thead>
+    <tbody>
+      <tr><td><code>root</code></td><td class="num">33</td></tr>
+      <tr><td><code>admin</code></td><td class="num">14</td></tr>
+      <tr><td><code>ssm-user</code></td><td class="num">3</td></tr>
+      <tr><td><code>sftpuser</code></td><td class="num">3</td></tr>
+      <tr><td><code>qniconfiguser</code></td><td class="num">3</td></tr>
+      <tr><td><code>navidrome</code></td><td class="num">2</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Password</th><th style="text-align:right">Tries</th></tr></thead>
+    <tbody>
+      <tr><td><code>admin</code></td><td class="num">16</td></tr>
+      <tr><td><code>12345</code></td><td class="num">3</td></tr>
+      <tr><td><code>a123456A</code></td><td class="num">3</td></tr>
+      <tr><td><code>ranger</code></td><td class="num">3</td></tr>
+      <tr><td><code>hcicloud</code></td><td class="num">3</td></tr>
+      <tr><td><code>milad</code></td><td class="num">3</td></tr>
+    </tbody>
+  </table></div>
+</div>
+<p>The usernames read like a catalogue of real software: <code>ssm-user</code> (AWS Systems Manager), <code>navidrome</code> (a self-hosted music server), <code>qniconfiguser</code>, <code>sftpuser</code>. Wordlists are built from defaults that real products ship with.</p>
+
+<h3>The clients announce themselves</h3>
+<div class="tbl wide"><table>
+  <thead><tr><th>SSH client version string</th><th style="text-align:right">Sessions</th><th>What it suggests</th></tr></thead>
+  <tbody>
+    <tr><td><code>SSH-2.0-Go</code></td><td class="num">546</td><td>Go's <code>x/crypto/ssh</code>, the library behind most modern brute-force tools</td></tr>
+    <tr><td><code>SSH-2.0-libssh_0.9.6</code></td><td class="num">7</td><td>C-based scanners</td></tr>
+    <tr><td><code>SSH-2.0-OpenSSH_8.9</code></td><td class="num">1</td><td>Possibly a human with a normal client, or a bot pretending to be one</td></tr>
+    <tr><td><code>SSH-2.0-Fingerprintx-SSH2</code></td><td class="num">1</td><td>A service fingerprinting tool doing reconnaissance</td></tr>
+  </tbody>
+</table></div>
+<p>Of 555 identified sessions, 546 came from Go. Not one looked like a person at a keyboard.</p>
+
+<h3>What they ran once "inside"</h3>
+<div class="tbl wide"><table>
+  <thead><tr><th>Command</th><th style="text-align:right">Count</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>uname -s -v -n -r -m</code></td><td class="num">500</td><td>Fingerprint OS, kernel and architecture to pick a payload</td></tr>
+    <tr><td><code>/bin/busybox HISILICON</code></td><td class="num">21</td><td>Mirai-family check for HiSilicon IoT chipsets (cameras, DVRs, routers)</td></tr>
+    <tr><td><code>enable</code> · <code>system</code> · <code>shell</code> · <code>sh</code></td><td class="num">14 each</td><td>Try to break out of router and embedded CLIs into a real shell</td></tr>
+    <tr><td>A long recon script (below)</td><td class="num">22</td><td>GPU hunting and honeypot detection</td></tr>
+  </tbody>
+</table></div>
+<p>The most interesting artifact was a single multi-line payload, run 22 times. Abridged:</p>
+<pre><code>arch=$(uname -m || busybox uname -m || …)
+cpus=$(nproc || grep -c "^processor" /proc/cpuinfo)
+cpu_model=$(lscpu | awk -F: '/Model name/ {print $2}' || …)
+gpu_info=$( (lspci | grep -i vga; lspci | grep -i nvidia) 2&gt;/dev/null )
+last_output=$(last 2&gt;/dev/null)
+filter_output=$( echo '===SHELL_BEHAVIOR===';
+  printf 'path_err=';    ( ./xxxxxx 2&gt;&amp;1 || true ) | head -c 250
+  printf 'cmd_err=';     ( xxxxxx 2&gt;&amp;1 || true )   | head -c 250
+  printf 'execute_err='; bash -c 'printf "#!/bin/bash\necho \"xxxxxx\"\n" &gt; filter
+                                   &amp;&amp; chmod +x filter &amp;&amp; ./filter &amp;&amp; rm -rf filter'
+  echo '===DONE===' )
+echo "GPU:$gpu_info"
+echo "FILTER:$filter_output"</code></pre>
+<p>Two things are going on here:</p>
+<ol>
+  <li><strong>Resource triage.</strong> CPU count, CPU model and especially <code>lspci | grep -i nvidia</code>. A machine with a GPU is worth far more to an attacker, for cryptomining or for reselling AI compute.</li>
+  <li><strong>Honeypot detection.</strong> The <code>===SHELL_BEHAVIOR===</code> block compares the exact error text for a missing path and a missing command, then writes, <code>chmod</code>s and executes a script to see whether it really runs. Emulated shells tend to get those edge cases subtly wrong. Bots are being built to recognise tools like Cowrie, and that's why persona consistency matters.</li>
+</ol>
+
+<h3>The web side was quieter</h3>
+<p>Only five web requests arrived in the first hour, against hundreds of SSH sessions. The first was telling: a request for <code>/.env.development</code>, a variant of the dotfile that frameworks use for secrets. SSH brute force is cheap and constant. Web discovery tends to arrive in bursts from crawlers working through IP ranges.</p>
+
+<h3>Geography is not attribution</h3>
+<p>Traffic came from 13 countries: Bulgaria, Romania, South Korea, India, Bangladesh, Canada, China, Russia and others. KQL's <code>geo_info_from_ip_address()</code> makes this a one-liner, and it's easy to over-read. The location belongs to the <em>machine</em>, which is usually a compromised device or a rented server, not to the person operating it.</p>
+
+<h2 id="viz"><span class="n">11</span>Dashboards and a live slide deck</h2>
+<p>All eleven dashboard queries share a header that excludes my own traffic and anchors everything to the exposure time:</p>
+<span class="file">queries/*.kql: shared header</span>
+<pre><code>let excluded = dynamic(["&lt;admin-ip&gt;"]);
+let exposed = todatetime("2026-10-11T06:07:20Z");
+let ssh = CowrieLogs_CL | where TimeGenerated &gt;= exposed and SrcIp !in (excluded)
+                        and Username !startswith "cbselftest";
+let web = CloudBaitWeb_CL | where TimeGenerated &gt;= exposed and SrcIp !in (excluded)
+                          and UserAgent !startswith "cbselftest";</code></pre>
+<span class="file">queries/08_most_suspicious.kql</span>
+<pre><code>ssh
+| summarize Logins=countif(EventId=="cowrie.login.success"),
+            Commands=countif(EventId=="cowrie.command.input"),
+            Downloads=countif(EventId startswith "cowrie.session.file_download"),
+            FirstSeen=min(TimeGenerated) by SrcIp
+| where Commands &gt; 0 or Downloads &gt; 0
+| extend Score = Commands + 10*Downloads
+| top 20 by Score desc</code></pre>
+<p>A small Node script turns the <code>.kql</code> files into an Azure Workbook, "Who is attacking my cloud?", with panels for time to first attack, top credentials, attacker commands, SSH client fingerprints and geography.</p>
+<p>For the talk itself I built a separate <strong>live slide deck</strong>: a zero-dependency Node server plus one HTML page with eleven full-screen slides, from the time-to-first-attack hero number through a scrolling live feed to the closing "Welcome to cloud security". It was designed to be safe to run on stage:</p>
+<ul>
+  <li><strong>Local only.</strong> It binds <code>127.0.0.1</code>, so nobody on the venue Wi-Fi can reach it.</li>
+  <li><strong>Read-only, no stored secrets.</strong> It calls <code>az account get-access-token --resource https://api.loganalytics.io</code>, a token whose audience is the Log Analytics query API and nothing else.</li>
+  <li><strong>Hostile input stays inert.</strong> Every attacker-controlled string (usernames, passwords, commands, URLs) is rendered through <code>textContent</code>, never <code>innerHTML</code>, and the page sends a strict Content-Security-Policy. When your data source is a honeypot, your dashboard is an attack surface.</li>
+  <li><strong>Privacy and resilience.</strong> IPs are masked to <code>a.b.x.x</code>. Each successful refresh is saved to disk, so if the network drops, the slides show the last data with an "offline · as of" label.</li>
+</ul>
+
+<h2 id="gotchas"><span class="n">12</span>Gotchas</h2>
+<p>None of these were hard; all of them cost time. In rough order of appearance:</p>
+<ul class="lessons">
+  <li><strong>Capacity, not quota.</strong> <code>Standard_B2s</code> failed with <code>SkuNotAvailable</code> (capacity restrictions) in South Africa North. <code>Standard_B2als_v2</code> deployed at once. Script a fallback list of sizes.</li>
+  <li><strong>The CLI can hide its own errors.</strong> <code>az vm create</code> crashed with <code>RuntimeError: The content for this response was already consumed</code>, masking the real <code>SkuNotAvailable</code>. Rerunning with <code>--debug</code> and grepping for <code>Exception Details</code> found it.</li>
+  <li><strong>Windows <code>az</code> + Git Bash paths.</strong> <code>az.exe</code> can't read <code>/c/Users/…</code> paths, so <code>--ssh-key-values</code> fell back to treating the path as a literal key and complained it wasn't RSA. Pass file contents, or convert with <code>cygpath -m</code>, and set <code>MSYS_NO_PATHCONV=1</code> so resource IDs starting with <code>/subscriptions</code> aren't mangled.</li>
+  <li><strong>Interactive extension prompts break scripts.</strong> <code>az monitor data-collection</code> commands prompt to install an extension, which turns into <code>EOFError</code> in a script. Calling the ARM REST API with <code>az rest</code> removed the dependency entirely.</li>
+  <li><strong><code>set -f</code> is global.</strong> I disabled globbing so <code>'*'</code> in NSG rules wouldn't expand, which also silently broke a later <code>queries/*.kql</code> sed. Scope your shell options.</li>
+  <li><strong>Ubuntu 24.04 SSH socket activation.</strong> See <a href="#ssh">section 04</a>. <code>Port</code> in <code>sshd_config</code> isn't enough.</li>
+  <li><strong>Mermaid isn't Markdown.</strong> A <code>;</code> inside a sequence-diagram message ends the statement, and a colon in a Gantt task name breaks the parser. Validate diagrams with <code>mermaid-cli</code> before publishing.</li>
+  <li><strong>Front-end temporal dead zone.</strong> The slide deck crashed only when opened directly on the counters slide, because navigation ran before the <code>const</code> declarations it touched. A screenshot of every slide via its URL hash caught it.</li>
+</ul>
+
+<h2 id="lessons"><span class="n">13</span>Security lessons</h2>
+<p>The point of the experiment is the talk, and the point of the talk is that the honeypot's defenses are the same ones any real workload needs:</p>
+<div class="tbl wide"><table>
+  <thead><tr><th>What protected the honeypot</th><th>The general principle</th></tr></thead>
+  <tbody>
+    <tr><td>Cowrie and fake data: attackers "got in" to nothing</td><td>Don't keep secrets where they can leak. Assume breach.</td></tr>
+    <tr><td>Own resource group and VNet, no peering</td><td><strong>Network segmentation</strong> limits the blast radius</td></tr>
+    <tr><td>Managed identity with zero roles</td><td><strong>Least privilege</strong>: an identity is not a permission</td></tr>
+    <tr><td>Outbound Internet denied</td><td><strong>Egress control</strong> stops a compromise from spreading</td></tr>
+    <tr><td>Real SSH moved, key-only, one source IP</td><td><strong>Reduce attack surface</strong>; no guessable passwords</td></tr>
+    <tr><td>Logs off the box within a minute</td><td><strong>Centralised monitoring</strong>: you can't defend what you can't see</td></tr>
+  </tbody>
+</table></div>
+<p>And the headline lesson: <strong>obscurity isn't a control.</strong> An unpublicised IP address bought four minutes and forty-eight seconds.</p>
+
+<h2 id="cleanup"><span class="n">14</span>Cost and cleanup</h2>
+<p>One B-series VM, a Standard public IP and a few megabytes of log ingestion a day: a few dollars over the life of the experiment. I deliberately left out a daily auto-shutdown, which would break collection every night. The kill switch is <code>az vm deallocate</code>, and the evidence is already safe in Log Analytics. After the presentation:</p>
+<pre><code>az group delete -n cloud-bait-rg --yes</code></pre>
+<p>That removes the VM, network, workspace and dashboards in one go, so export the screenshots and query results first.</p>
+
+<h3>Repository layout</h3>
+<pre><code>app/cloudbait_web.py     fake web app (stdlib Python, JSON request log)
+vm/setup.sh              provisioning: sshd move, Cowrie, iptables, nginx, app
+vm/cowrie.cfg            Cowrie persona
+infra/deploy.sh          az phases: network | vm | monitor | egress | dashboard | expose
+infra/dcr.template.json  Syslog + custom text logs with transformKql
+infra/table-*.json       custom table schemas
+queries/*.kql            11 dashboard queries
+tests/selftest.sh        end-to-end test, services + ingestion
+presenter/               local live slide deck</code></pre>
+
+</article>
+
+<footer class="end">
+  <p>Operation: Cloud Bait ran from 11 to 15 October 2026 in an isolated Azure resource group. All data served by the honeypot was synthetic, and attacker IP addresses are omitted or masked. If you build your own, keep the order: isolate, monitor, test, then expose.</p>
+</footer>
