@@ -1,0 +1,28 @@
+{
+  "properties": {
+    "retentionInDays": 30,
+    "schema": {
+      "name": "CowrieLogs_CL",
+      "columns": [
+        { "name": "TimeGenerated", "type": "datetime" },
+        { "name": "RawData", "type": "string" },
+        { "name": "Computer", "type": "string" },
+        { "name": "FilePath", "type": "string" },
+        { "name": "EventId", "type": "string" },
+        { "name": "SrcIp", "type": "string" },
+        { "name": "SrcPort", "type": "int" },
+        { "name": "DstPort", "type": "int" },
+        { "name": "Protocol", "type": "string" },
+        { "name": "Session", "type": "string" },
+        { "name": "Username", "type": "string" },
+        { "name": "Password", "type": "string" },
+        { "name": "Command", "type": "string" },
+        { "name": "ClientVersion", "type": "string" },
+        { "name": "Url", "type": "string" },
+        { "name": "Sha256", "type": "string" },
+        { "name": "Duration", "type": "real" },
+        { "name": "Message", "type": "string" }
+      ]
+    }
+  }
+}
