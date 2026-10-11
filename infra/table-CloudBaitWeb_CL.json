@@ -1,0 +1,29 @@
+{
+  "properties": {
+    "retentionInDays": 30,
+    "schema": {
+      "name": "CloudBaitWeb_CL",
+      "columns": [
+        { "name": "TimeGenerated", "type": "datetime" },
+        { "name": "RawData", "type": "string" },
+        { "name": "Computer", "type": "string" },
+        { "name": "FilePath", "type": "string" },
+        { "name": "SrcIp", "type": "string" },
+        { "name": "Method", "type": "string" },
+        { "name": "Uri", "type": "string" },
+        { "name": "UrlPath", "type": "string" },
+        { "name": "Query", "type": "string" },
+        { "name": "Status", "type": "int" },
+        { "name": "ResponseBytes", "type": "int" },
+        { "name": "RequestBytes", "type": "int" },
+        { "name": "UserAgent", "type": "string" },
+        { "name": "HostHeader", "type": "string" },
+        { "name": "Scheme", "type": "string" },
+        { "name": "Referer", "type": "string" },
+        { "name": "Body", "type": "string" },
+        { "name": "LoginUsername", "type": "string" },
+        { "name": "LoginPassword", "type": "string" }
+      ]
+    }
+  }
+}
