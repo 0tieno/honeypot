@@ -1,0 +1,10 @@
+// Excludes your own test traffic. Update the IP list if your home IP changes.
+let excluded = dynamic(["105.163.156.134"]);
+let exposed = todatetime("2026-10-11T06:07:20Z"); // replaced by the real exposure time
+let ssh = CowrieLogs_CL | where TimeGenerated >= exposed and SrcIp !in (excluded) and Username !startswith "cbselftest";
+let web = CloudBaitWeb_CL | where TimeGenerated >= exposed and SrcIp !in (excluded) and UserAgent !startswith "cbselftest";
+// 03 ATTACK ACTIVITY OVER TIME (render as timechart)
+union (ssh | extend Service=iif(DstPort==2223,"Telnet","SSH")),
+      (web | extend Service=toupper(Scheme))
+| summarize Events=count() by Service, bin(TimeGenerated, 1h)
+| render timechart
