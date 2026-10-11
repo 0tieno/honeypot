@@ -1,0 +1,12 @@
+// Excludes your own test traffic. Update the IP list if your home IP changes.
+let excluded = dynamic(["105.163.156.134"]);
+let exposed = todatetime("2026-10-11T06:07:20Z"); // replaced by the real exposure time
+let ssh = CowrieLogs_CL | where TimeGenerated >= exposed and SrcIp !in (excluded) and Username !startswith "cbselftest";
+let web = CloudBaitWeb_CL | where TimeGenerated >= exposed and SrcIp !in (excluded) and UserAgent !startswith "cbselftest";
+// 07 GEOGRAPHIC DISTRIBUTION
+union ssh, web
+| summarize Events=count() by SrcIp
+| extend geo = geo_info_from_ip_address(SrcIp)
+| extend Country = tostring(geo.country), Lat = toreal(geo.latitude), Lon = toreal(geo.longitude)
+| summarize Events=sum(Events), IPs=count() by Country
+| order by Events desc
